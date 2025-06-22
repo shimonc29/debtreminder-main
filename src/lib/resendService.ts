@@ -1,109 +1,104 @@
-import { Resend } from 'resend'
+import { getResendApiKey } from '@/config/env'
 
-let resend: Resend | null = null
-let isInitialized = false
+const RESEND_API_KEY = getResendApiKey()
 
-export const initializeResendService = (apiKey: string) => {
-  resend = new Resend(apiKey)
-  isInitialized = true
-  console.log('Resend service initialized successfully')
+if (!RESEND_API_KEY) {
+  throw new Error('Missing Resend API key')
 }
 
 export interface EmailData {
-  to: string | string[]
-  from: string
-  fromName?: string
+  to: string
   subject: string
-  text: string
   html: string
+  text?: string
+  from?: string
+  fromName?: string
 }
 
-export const sendEmail = async (emailData: EmailData) => {
-  if (!isInitialized || !resend) {
-    throw new Error('Resend service not initialized. Please set API key first.')
-  }
-
+export const sendEmail = async (emailData: EmailData): Promise<{ success: boolean; message?: string; error?: string }> => {
   try {
     const fromAddress = emailData.fromName 
-      ? `${emailData.fromName} <${emailData.from}>`
-      : emailData.from
+      ? `${emailData.fromName} <${emailData.from || 'noreply@debtreminder.com'}>`
+      : emailData.from || 'Debt Reminder <noreply@debtreminder.com>'
 
-    const { data, error } = await resend.emails.send({
+    const requestBody: any = {
       from: fromAddress,
       to: emailData.to,
       subject: emailData.subject,
-      text: emailData.text,
       html: emailData.html,
-    })
-
-    if (error) {
-      throw new Error(error.message)
     }
 
-    // Log to database
-    await logEmail({
-      to: Array.isArray(emailData.to) ? emailData.to.join(', ') : emailData.to,
-      from: emailData.from,
-      subject: emailData.subject,
-      status: 'sent',
-      sentAt: new Date(),
-      messageId: data?.id || 'unknown'
+    // Add text if provided
+    if (emailData.text) {
+      requestBody.text = emailData.text
+    }
+
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
     })
 
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+    }
+
+    const result = await response.json()
     return {
       success: true,
-      messageId: data?.id,
-      data
+      message: 'Email sent successfully',
     }
-  } catch (error: any) {
-    console.error('Resend Error:', error)
-    
-    // Log failed email
-    await logEmail({
-      to: Array.isArray(emailData.to) ? emailData.to.join(', ') : emailData.to,
-      from: emailData.from,
-      subject: emailData.subject,
-      status: 'failed',
-      sentAt: new Date(),
-      error: error.message
-    })
-
-    throw new Error(`Failed to send email: ${error.message}`)
+  } catch (error) {
+    console.error('Error sending email:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    }
   }
 }
 
 // Function to test email connection
 export const testEmailConnection = async (apiKey: string, fromEmail: string) => {
   try {
-    const testResend = new Resend(apiKey)
-    
-    const { data, error } = await testResend.emails.send({
-      from: fromEmail,
-      to: fromEmail, // Send test email to yourself
-      subject: 'בדיקת חיבור - DebtReminder System',
-      text: 'זהו מייל בדיקה לוידוא תקינות החיבור למערכת שליחת האימיילים.',
-      html: `
-        <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #4338ca;">✅ בדיקת חיבור הצליחה!</h2>
-          <p>זהו מייל בדיקה לוידוא תקינות החיבור למערכת שליחת האימיילים.</p>
-          <p>אם אתה רואה את המייל הזה, החיבור ל-Resend עובד בהצלחה!</p>
-          <hr style="margin: 20px 0;">
-          <p style="font-size: 12px; color: #666;">
-            נשלח ממערכת DebtReminder<br>
-            ${new Date().toLocaleString('he-IL')}
-          </p>
-        </div>
-      `
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: fromEmail,
+        to: fromEmail, // Send test email to yourself
+        subject: 'בדיקת חיבור - DebtReminder System',
+        html: `
+          <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #4338ca;">✅ בדיקת חיבור הצליחה!</h2>
+            <p>זהו מייל בדיקה לוידוא תקינות החיבור למערכת שליחת האימיילים.</p>
+            <p>אם אתה רואה את המייל הזה, החיבור ל-Resend עובד בהצלחה!</p>
+            <hr style="margin: 20px 0;">
+            <p style="font-size: 12px; color: #666;">
+              נשלח ממערכת DebtReminder<br>
+              ${new Date().toLocaleString('he-IL')}
+            </p>
+          </div>
+        `
+      }),
     })
 
-    if (error) {
-      throw new Error(error.message)
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
     }
 
+    const result = await response.json()
     return { 
       success: true, 
       message: 'מייל בדיקה נשלח בהצלחה!',
-      messageId: data?.id
+      messageId: result?.id
     }
   } catch (error: any) {
     console.error('Email test failed:', error)
@@ -453,4 +448,11 @@ const logEmail = async (emailLog: {
   // const { error } = await supabase
   //   .from('email_logs')
   //   .insert([emailLog])
+}
+
+// Legacy function for backward compatibility
+export const initializeResendService = (apiKey: string) => {
+  console.log('Resend service initialized with API key')
+  // This function is kept for backward compatibility but doesn't do anything
+  // since we're now using the API key from environment variables
 }

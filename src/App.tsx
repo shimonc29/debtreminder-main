@@ -32,6 +32,7 @@ const Checkout = lazy(() => import("./pages/Checkout"));
 const CheckoutSuccess = lazy(() => import("./pages/CheckoutSuccess"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
+const IntegrationTest = lazy(() => import("./pages/IntegrationTest"));
 // Admin Pages
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const AdminDashboard = lazy(() => import("./pages/Admin/AdminDashboard"));
@@ -92,6 +93,7 @@ const App = () => (
                   <Route path="/pricing" element={<Pricing />} />
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/checkout/success" element={<CheckoutSuccess />} />
+                  <Route path="/test-integrations" element={<IntegrationTest />} />
                   {/* Admin Routes */}
                   <Route path="/admin/login" element={<AdminLogin />} />
                   <Route path="/admin/dashboard" element={<AdminDashboard />} />
