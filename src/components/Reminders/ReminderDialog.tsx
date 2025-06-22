@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -36,6 +35,9 @@ export function ReminderDialog({ open, onOpenChange }: ReminderDialogProps) {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
   const [previewMode, setPreviewMode] = useState('edit');
+  
+  // Add loading state for sending reminder
+  const [isSending, setIsSending] = useState(false);
   
   // WhatsApp specific state
   const [isWhatsAppAvailable, setIsWhatsAppAvailable] = useState<boolean>(true);
@@ -127,7 +129,7 @@ export function ReminderDialog({ open, onOpenChange }: ReminderDialogProps) {
     return '';
   };
   
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!selectedCustomerId || !selectedDebtId || !selectedTemplateId || !messageContent) {
       toast({
         title: "שגיאה",
@@ -156,21 +158,38 @@ export function ReminderDialog({ open, onOpenChange }: ReminderDialogProps) {
       return;
     }
     
-    // In a real app, this would call an API to send the reminder
-    toast({
-      title: "נשלחה תזכורת",
-      description: selectedChannel === 'email' 
-        ? "התזכורת נשלחה בהצלחה לאימייל הלקוח" 
-        : "התזכורת נשלחה בהצלחה ל-WhatsApp של הלקוח",
-    });
-    
-    // If this is a WhatsApp message, reduce the quota
-    if (selectedChannel === 'whatsapp') {
-      setWhatsappQuota(prev => prev - 1);
+    setIsSending(true);
+    try {
+      // In a real app, this would call an API to send the reminder
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast({
+        title: "נשלחה תזכורת",
+        description: selectedChannel === 'email' 
+          ? "התזכורת נשלחה בהצלחה לאימייל הלקוח" 
+          : "התזכורת נשלחה בהצלחה ל-WhatsApp של הלקוח",
+      });
+      
+      // If this is a WhatsApp message, reduce the quota
+      if (selectedChannel === 'whatsapp') {
+        setWhatsappQuota(prev => prev - 1);
+      }
+      
+      onOpenChange(false);
+      resetForm();
+    } catch (error) {
+      console.error('Send reminder error:', error);
+      toast({
+        title: "שגיאה",
+        description: error instanceof Error 
+          ? `שגיאה בשליחת התזכורת: ${error.message}`
+          : "שגיאה בשליחת התזכורת. אנא נסה שוב מאוחר יותר.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSending(false);
     }
-    
-    onOpenChange(false);
-    resetForm();
   };
   
   const resetForm = () => {
@@ -355,11 +374,19 @@ export function ReminderDialog({ open, onOpenChange }: ReminderDialogProps) {
         </div>
         
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            disabled={isSending}
+          >
             ביטול
           </Button>
-          <Button onClick={handleSend}>
-            שלח תזכורת
+          <Button 
+            onClick={handleSend}
+            disabled={isSending}
+          >
+            {isSending ? 'שולח...' : 'שלח תזכורת'}
           </Button>
         </DialogFooter>
       </DialogContent>

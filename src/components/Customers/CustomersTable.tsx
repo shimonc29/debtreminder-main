@@ -1,4 +1,3 @@
-
 import { Customer } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { 
@@ -33,7 +32,6 @@ export function CustomersTable({
 }: CustomersTableProps) {
   const renderSortIcon = (column: keyof Customer) => {
     if (sortColumn !== column) return null;
-
     return sortOrder === 'asc' ? (
       <ArrowUp className="ml-1 h-4 w-4 inline" />
     ) : (
@@ -45,36 +43,70 @@ export function CustomersTable({
     onSort(column);
   };
 
+  // Helper for aria-sort
+  const getAriaSort = (column: keyof Customer) => {
+    if (sortColumn !== column) return 'none';
+    return sortOrder === 'asc' ? 'ascending' : 'descending';
+  };
+
   return (
     <div className="w-full overflow-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead 
-              className="cursor-pointer"
-              onClick={() => handleSort('name')}
-            >
-              שם {renderSortIcon('name')}
+            <TableHead scope="col">
+              <button
+                type="button"
+                className="cursor-pointer flex items-center bg-transparent border-0 p-0 m-0 text-inherit focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-sort={getAriaSort('name')}
+                aria-label="מיין לפי שם"
+                tabIndex={0}
+                onClick={() => handleSort('name')}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleSort('name'); }}
+              >
+                שם {renderSortIcon('name')}
+              </button>
             </TableHead>
-            <TableHead 
-              className="cursor-pointer"
-              onClick={() => handleSort('email')}
-            >
-              אימייל {renderSortIcon('email')}
+            <TableHead scope="col">
+              <button
+                type="button"
+                className="cursor-pointer flex items-center bg-transparent border-0 p-0 m-0 text-inherit focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-sort={getAriaSort('email')}
+                aria-label="מיין לפי אימייל"
+                tabIndex={0}
+                onClick={() => handleSort('email')}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleSort('email'); }}
+              >
+                אימייל {renderSortIcon('email')}
+              </button>
             </TableHead>
-            <TableHead 
-              className="cursor-pointer"
-              onClick={() => handleSort('phone')}
-            >
-              טלפון {renderSortIcon('phone')}
+            <TableHead scope="col">
+              <button
+                type="button"
+                className="cursor-pointer flex items-center bg-transparent border-0 p-0 m-0 text-inherit focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-sort={getAriaSort('phone')}
+                aria-label="מיין לפי טלפון"
+                tabIndex={0}
+                onClick={() => handleSort('phone')}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleSort('phone'); }}
+              >
+                טלפון {renderSortIcon('phone')}
+              </button>
             </TableHead>
-            <TableHead 
-              className="cursor-pointer"
-              onClick={() => handleSort('createdAt')}
-            >
-              תאריך הוספה {renderSortIcon('createdAt')}
+            <TableHead scope="col">
+              <button
+                type="button"
+                className="cursor-pointer flex items-center bg-transparent border-0 p-0 m-0 text-inherit focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-sort={getAriaSort('createdAt')}
+                aria-label="מיין לפי תאריך הוספה"
+                tabIndex={0}
+                onClick={() => handleSort('createdAt')}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleSort('createdAt'); }}
+              >
+                תאריך הוספה {renderSortIcon('createdAt')}
+              </button>
             </TableHead>
-            <TableHead>פעולות</TableHead>
+            <TableHead scope="col">פעולות</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -98,6 +130,7 @@ export function CustomersTable({
                       size="icon" 
                       onClick={() => onView(customer)}
                       title="צפייה בפרטי לקוח"
+                      aria-label="צפייה בפרטי לקוח"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -106,14 +139,19 @@ export function CustomersTable({
                       size="icon" 
                       onClick={() => onEdit(customer)}
                       title="עריכת לקוח"
+                      aria-label="עריכת לקוח"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      onClick={() => onDelete(customer)}
+                      onClick={() => {
+                        // Suggestion: Add a confirmation dialog at a higher level before calling onDelete
+                        onDelete(customer);
+                      }}
                       title="מחיקת לקוח"
+                      aria-label="מחיקת לקוח"
                       className="text-destructive hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />

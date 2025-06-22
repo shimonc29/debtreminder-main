@@ -1,4 +1,3 @@
-
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { 
@@ -60,6 +59,7 @@ const Landing = () => {
                 src="/dashboard-preview.png" 
                 alt="תצוגה מקדימה של הדשבורד" 
                 className="w-full h-auto" 
+                loading="lazy"
                 onError={(e) => {
                   // Fallback in case image doesn't exist
                   e.currentTarget.src = "https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=1050&q=80";

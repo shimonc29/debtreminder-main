@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { 
   Card, 
@@ -51,6 +50,16 @@ export function EmailTemplateForm({
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
+  // Accessibility: link description for htmlContent
+  const htmlContentDescId = "htmlContent-desc";
+
+  // Helper: check if required fields are filled (non-empty, trimmed)
+  const isFormValid =
+    template.name.trim() !== '' &&
+    template.subject.trim() !== '' &&
+    template.htmlContent.trim() !== '' &&
+    !/<script[\s>]/i.test(template.htmlContent); // basic script tag check
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setTemplate((prev) => ({ ...prev, [name]: value }));
@@ -62,12 +71,10 @@ export function EmailTemplateForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     try {
       setIsSaving(true);
-      
       // Validation
-      if (!template.name || !template.subject || !template.htmlContent) {
+      if (!template.name.trim() || !template.subject.trim() || !template.htmlContent.trim()) {
         toast({
           variant: "destructive",
           title: "שגיאת אימות",
@@ -75,10 +82,16 @@ export function EmailTemplateForm({
         });
         return;
       }
-      
+      if (/<script[\s>]/i.test(template.htmlContent)) {
+        toast({
+          variant: "destructive",
+          title: "HTML לא בטוח",
+          description: "אסור להשתמש בתגי <script> בתוכן האימייל.",
+        });
+        return;
+      }
       // Call the parent save handler
       onSave(template);
-      
       toast({
         title: `תבנית ${existingTemplate ? 'עודכנה' : 'נוצרה'} בהצלחה`,
         description: `תבנית האימייל "${template.name}" ${existingTemplate ? 'עודכנה' : 'נוצרה'} בהצלחה.`,
@@ -98,13 +111,19 @@ export function EmailTemplateForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{existingTemplate ? 'ערוך תבנית אימייל' : 'צור תבנית אימייל חדשה'}</CardTitle>
+        <CardTitle id="email-template-title">{existingTemplate ? 'ערוך תבנית אימייל' : 'צור תבנית אימייל חדשה'}</CardTitle>
         <CardDescription>
           הגדר תבנית מותאמת אישית לאימיילים. השתמש ב-{'{{'}משתנה{'}}'}  כדי להכניס משתנים דינמיים.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form id="email-template-form" onSubmit={handleSubmit} className="space-y-6">
+        <form 
+          id="email-template-form" 
+          onSubmit={handleSubmit} 
+          className="space-y-6" 
+          role="form"
+          aria-labelledby="email-template-title"
+        >
           <div className="space-y-2">
             <Label htmlFor="name">שם התבנית</Label>
             <Input 
@@ -151,9 +170,10 @@ export function EmailTemplateForm({
               placeholder="<p>Hello {{name}}</p>"
               className="min-h-[300px] font-mono text-sm"
               required
+              aria-describedby={htmlContentDescId}
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              הזן תוכן HTML שיופיע בגוף האימייל. השתמש ב-{'{{'}משתנה{'}}'}  עבור תוכן דינמי.
+            <p id={htmlContentDescId} className="text-xs text-muted-foreground mt-1">
+              הזן תוכן HTML שיופיע בגוף האימייל. השתמש ב-{'{{'}משתנה{'}}'}  עבור תוכן דינמי. אין להכניס תגי &lt;script&gt;.
             </p>
           </div>
           
@@ -162,6 +182,8 @@ export function EmailTemplateForm({
               id="isActive" 
               checked={template.isActive} 
               onCheckedChange={handleCheckboxChange}
+              aria-checked={template.isActive}
+              tabIndex={0}
             />
             <Label htmlFor="isActive">תבנית פעילה</Label>
           </div>
@@ -171,7 +193,11 @@ export function EmailTemplateForm({
         <Button type="button" variant="outline" onClick={onCancel}>
           ביטול
         </Button>
-        <Button type="submit" form="email-template-form" disabled={isSaving}>
+        <Button 
+          type="submit" 
+          form="email-template-form" 
+          disabled={isSaving || !isFormValid}
+        >
           {isSaving ? 'שומר...' : existingTemplate ? 'עדכן תבנית' : 'צור תבנית'}
         </Button>
       </CardFooter>

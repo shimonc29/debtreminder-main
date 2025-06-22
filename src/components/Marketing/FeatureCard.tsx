@@ -1,4 +1,3 @@
-
 import { ReactNode } from 'react';
 
 interface FeatureCardProps {
@@ -21,6 +20,7 @@ export function FeatureCard({ icon, title, description, imageSrc }: FeatureCardP
           src={imageSrc} 
           alt={title} 
           className="w-full h-auto"
+          loading="lazy"
           onError={(e) => {
             // Fallback in case image doesn't exist
             e.currentTarget.src = "https://via.placeholder.com/300x200?text=תכונה";

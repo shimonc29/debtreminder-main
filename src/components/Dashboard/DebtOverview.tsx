@@ -1,4 +1,3 @@
-
 import { 
   Card, 
   CardContent, 
@@ -8,12 +7,13 @@ import {
 } from '@/components/ui/card';
 import { debts, getCustomerById } from '@/lib/db';
 import { format } from 'date-fns';
+import { useMemo } from 'react';
 
 export function DebtOverview() {
-  // Group debts by status
-  const overdueDebts = debts.filter(debt => debt.status === "overdue");
-  const pendingDebts = debts.filter(debt => debt.status === "pending");
-  const partiallyPaidDebts = debts.filter(debt => debt.status === "partially_paid");
+  // Group debts by status (memoized for performance)
+  const overdueDebts = useMemo(() => debts.filter(debt => debt.status === "overdue"), []);
+  const pendingDebts = useMemo(() => debts.filter(debt => debt.status === "pending"), []);
+  const partiallyPaidDebts = useMemo(() => debts.filter(debt => debt.status === "partially_paid"), []);
   
   // Format currency
   const formatCurrency = (amount: number, currency: string) => {
@@ -64,17 +64,21 @@ export function DebtOverview() {
       <CardContent>
         <div className="space-y-6">
           {/* Overdue debts */}
-          <div>
-            <h3 className="font-semibold text-red-600 mb-2">באיחור</h3>
+          <section aria-labelledby="overdue-debts-title" role="region">
+            <h3 id="overdue-debts-title" className="font-semibold text-red-600 mb-2">באיחור</h3>
             {overdueDebts.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-2 flex flex-col">
                 {overdueDebts.map(debt => {
                   const customer = getCustomerById(debt.customerId);
-                  
                   return (
-                    <div key={debt.id} className="flex justify-between items-center p-3 border rounded-lg bg-red-50">
+                    <div 
+                      key={debt.id} 
+                      className="flex flex-wrap md:flex-nowrap justify-between items-center p-3 border rounded-lg bg-red-50"
+                      role="article"
+                      aria-label={`חוב באיחור עבור ${customer?.name || 'לקוח לא ידוע'}`}
+                    >
                       <div>
-                        <p className="font-medium">{customer?.name}</p>
+                        <p className="font-medium">{customer?.name || <span className="text-red-500">לקוח לא ידוע</span>}</p>
                         <p className="text-sm text-muted-foreground">
                           {debt.description} - חשבונית {debt.invoiceNumber}
                         </p>
@@ -92,20 +96,24 @@ export function DebtOverview() {
             ) : (
               <p className="text-sm text-muted-foreground">אין חובות באיחור</p>
             )}
-          </div>
+          </section>
           
           {/* Pending debts */}
-          <div>
-            <h3 className="font-semibold text-yellow-600 mb-2">ממתינים לתשלום</h3>
+          <section aria-labelledby="pending-debts-title" role="region">
+            <h3 id="pending-debts-title" className="font-semibold text-yellow-600 mb-2">ממתינים לתשלום</h3>
             {pendingDebts.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-2 flex flex-col">
                 {pendingDebts.map(debt => {
                   const customer = getCustomerById(debt.customerId);
-                  
                   return (
-                    <div key={debt.id} className="flex justify-between items-center p-3 border rounded-lg">
+                    <div 
+                      key={debt.id} 
+                      className="flex flex-wrap md:flex-nowrap justify-between items-center p-3 border rounded-lg"
+                      role="article"
+                      aria-label={`חוב ממתין עבור ${customer?.name || 'לקוח לא ידוע'}`}
+                    >
                       <div>
-                        <p className="font-medium">{customer?.name}</p>
+                        <p className="font-medium">{customer?.name || <span className="text-red-500">לקוח לא ידוע</span>}</p>
                         <p className="text-sm text-muted-foreground">
                           {debt.description} - חשבונית {debt.invoiceNumber}
                         </p>
@@ -121,20 +129,25 @@ export function DebtOverview() {
             ) : (
               <p className="text-sm text-muted-foreground">אין חובות ממתינים</p>
             )}
-          </div>
+          </section>
           
           {/* Partially paid debts */}
-          <div>
-            <h3 className="font-semibold text-blue-600 mb-2">שולמו חלקית</h3>
+          <section aria-labelledby="partially-paid-debts-title" role="region">
+            <h3 id="partially-paid-debts-title" className="font-semibold text-blue-600 mb-2">שולמו חלקית</h3>
             {partiallyPaidDebts.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-2 flex flex-col">
                 {partiallyPaidDebts.map(debt => {
                   const customer = getCustomerById(debt.customerId);
-                  
+                  const percentPaid = Math.round((debt.paidAmount / debt.amount) * 100);
                   return (
-                    <div key={debt.id} className="flex justify-between items-center p-3 border rounded-lg">
+                    <div 
+                      key={debt.id} 
+                      className="flex flex-wrap md:flex-nowrap justify-between items-center p-3 border rounded-lg"
+                      role="article"
+                      aria-label={`חוב ששולם חלקית עבור ${customer?.name || 'לקוח לא ידוע'}`}
+                    >
                       <div>
-                        <p className="font-medium">{customer?.name}</p>
+                        <p className="font-medium">{customer?.name || <span className="text-red-500">לקוח לא ידוע</span>}</p>
                         <p className="text-sm text-muted-foreground">
                           {debt.description} - חשבונית {debt.invoiceNumber}
                         </p>
@@ -142,8 +155,12 @@ export function DebtOverview() {
                       <div className="text-right">
                         <div className="flex items-center gap-2">
                           <p className="font-bold">{getRemainingAmount(debt)}</p>
-                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
-                            {Math.round((debt.paidAmount / debt.amount) * 100)}% שולם
+                          <span 
+                            className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full"
+                            aria-label={`שולם ${percentPaid} אחוזים`}
+                            role="status"
+                          >
+                            {percentPaid}% שולם
                           </span>
                         </div>
                         <p className="text-sm">תאריך יעד: {formatDateString(debt.dueDate)}</p>
@@ -155,7 +172,7 @@ export function DebtOverview() {
             ) : (
               <p className="text-sm text-muted-foreground">אין חובות ששולמו חלקית</p>
             )}
-          </div>
+          </section>
         </div>
       </CardContent>
     </Card>

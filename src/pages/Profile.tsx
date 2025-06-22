@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -27,6 +26,9 @@ const Profile = () => {
     taxId: '',
   });
   
+  // Add loading state for profile update
+  const [isUpdating, setIsUpdating] = useState(false);
+  
   // Set profile state when user data is available
   useEffect(() => {
     if (user) {
@@ -49,6 +51,12 @@ const Profile = () => {
   }, [isAuthenticated, loading, navigate]);
 
   const handleProfileUpdate = async () => {
+    if (!profile.name.trim()) {
+      toast.error('שם מלא הוא שדה חובה');
+      return;
+    }
+    
+    setIsUpdating(true);
     try {
       await updateUserProfile({
         name: profile.name,
@@ -60,8 +68,14 @@ const Profile = () => {
       });
       toast.success('הפרופיל עודכן בהצלחה');
     } catch (error) {
-      toast.error('שגיאה בעדכון הפרופיל');
-      console.error(error);
+      console.error('Profile update error:', error);
+      if (error instanceof Error) {
+        toast.error(`שגיאה בעדכון הפרופיל: ${error.message}`);
+      } else {
+        toast.error('שגיאה בעדכון הפרופיל. אנא נסה שוב מאוחר יותר.');
+      }
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -187,7 +201,12 @@ const Profile = () => {
                     </div>
                   </CardContent>
                   <CardFooter className="flex justify-end">
-                    <Button onClick={handleProfileUpdate}>שמור שינויים</Button>
+                    <Button 
+                      onClick={handleProfileUpdate} 
+                      disabled={isUpdating}
+                    >
+                      {isUpdating ? 'שומר...' : 'שמור שינויים'}
+                    </Button>
                   </CardFooter>
                 </Card>
               </TabsContent>

@@ -1,4 +1,3 @@
-
 interface StepCardProps {
   number: string;
   title: string;
@@ -19,6 +18,7 @@ export function StepCard({ number, title, description, imageSrc }: StepCardProps
           src={imageSrc} 
           alt={`שלב ${number}: ${title}`} 
           className="w-full h-auto"
+          loading="lazy"
           onError={(e) => {
             // Fallback in case image doesn't exist
             e.currentTarget.src = "https://via.placeholder.com/300x200?text=שלב";
