@@ -2,15 +2,43 @@
 
 import { Resend } from 'resend';
 
+// Firebase Functions config support
+let functionsConfig = null;
+function getFunctionsConfig() {
+  if (functionsConfig) return functionsConfig;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const functions = require('firebase-functions');
+    functionsConfig = functions.config();
+    return functionsConfig;
+  } catch (e) {
+    return null;
+  }
+}
+
+function getEnvVar(key, fallback) {
+  // Try Firebase Functions config first
+  const config = getFunctionsConfig();
+  if (config) {
+    // Support nested keys like supabase.url
+    const [section, subkey] = key.split('.');
+    if (config[section] && config[section][subkey]) {
+      return config[section][subkey];
+    }
+  }
+  // Fallback to process.env
+  return process.env[key.toUpperCase().replace('.', '_')] || fallback;
+}
+
 // Set your trusted origins here
 const TRUSTED_ORIGINS = [
   'https://your-production-domain.com',
   'http://localhost:3000',
 ];
 
-// Use a static API key from environment
-const SERVER_API_KEY = process.env.RESEND_API_KEY;
-const ENDPOINT_API_KEY = process.env.ENDPOINT_API_KEY; // for authenticating requests
+// Use config or env for API keys
+const SERVER_API_KEY = getEnvVar('resend.api_key', process.env.RESEND_API_KEY);
+const ENDPOINT_API_KEY = getEnvVar('endpoint.api_key', process.env.ENDPOINT_API_KEY);
 
 function isValidEmail(email) {
   // Simple email regex

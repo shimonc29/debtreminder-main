@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/lib/supabase';
-import { testEmailConnection } from '@/lib/resendService';
+import { testEmailConnection } from '@/lib/firebaseFunctions';
 import { getSupabaseUrl, getSupabaseAnonKey, getResendApiKey } from '@/config/env';
 
 interface TestResult {
@@ -21,7 +21,6 @@ export default function IntegrationTest() {
   const [resendTest, setResendTest] = useState<TestResult | null>(null);
   const [isTestingSupabase, setIsTestingSupabase] = useState(false);
   const [isTestingResend, setIsTestingResend] = useState(false);
-  const [resendApiKey, setResendApiKey] = useState('');
   const [testEmail, setTestEmail] = useState('');
 
   // Environment variables status
@@ -64,14 +63,6 @@ export default function IntegrationTest() {
   };
 
   const testResendConnection = async () => {
-    if (!resendApiKey.trim()) {
-      setResendTest({
-        success: false,
-        message: '❌ Please enter a Resend API key'
-      });
-      return;
-    }
-
     if (!testEmail.trim()) {
       setResendTest({
         success: false,
@@ -84,7 +75,7 @@ export default function IntegrationTest() {
     setResendTest(null);
 
     try {
-      const result = await testEmailConnection(resendApiKey, testEmail);
+      const result = await testEmailConnection(testEmail);
       
       if (result.success) {
         setResendTest({
@@ -95,8 +86,8 @@ export default function IntegrationTest() {
       } else {
         setResendTest({
           success: false,
-          message: `❌ Resend connection failed: ${result.message}`,
-          details: { error: result.message }
+          message: `❌ Resend connection failed: ${result.error}`,
+          details: { error: result.error }
         });
       }
     } catch (error: any) {
@@ -115,7 +106,7 @@ export default function IntegrationTest() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Integration Test</h1>
         <p className="text-muted-foreground">
-          Verify Supabase database and Resend email integrations
+          Verify Supabase database and Resend email integrations via Firebase Functions
         </p>
       </div>
 
@@ -152,7 +143,7 @@ export default function IntegrationTest() {
             </div>
             
             <div>
-              <h4 className="font-medium">Resend</h4>
+              <h4 className="font-medium">Resend (Firebase Functions)</h4>
               <div className="space-y-2 mt-2">
                 <div className="flex items-center gap-2">
                   <Badge variant={envVars.resend.key ? "default" : "destructive"}>
@@ -160,6 +151,14 @@ export default function IntegrationTest() {
                   </Badge>
                   <span className="text-sm text-muted-foreground">
                     {envVars.resend.key ? "Configured" : "Missing"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">
+                    🔧 Firebase Functions
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    Server-side only
                   </span>
                 </div>
               </div>
@@ -230,23 +229,12 @@ export default function IntegrationTest() {
         {/* Resend Test */}
         <Card>
           <CardHeader>
-            <CardTitle>Resend Email Service</CardTitle>
+            <CardTitle>Resend Email Service (Firebase Functions)</CardTitle>
             <CardDescription>
-              Test email sending with Resend
+              Test email sending with Resend via Firebase Functions
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="resend-api-key">Resend API Key</Label>
-              <Input
-                id="resend-api-key"
-                type="password"
-                placeholder="re_..."
-                value={resendApiKey}
-                onChange={(e) => setResendApiKey(e.target.value)}
-              />
-            </div>
-            
             <div className="space-y-2">
               <Label htmlFor="test-email">Test Email Address</Label>
               <Input
@@ -260,7 +248,7 @@ export default function IntegrationTest() {
 
             <Button 
               onClick={testResendConnection}
-              disabled={isTestingResend || !resendApiKey || !testEmail}
+              disabled={isTestingResend || !testEmail}
               className="w-full"
             >
               {isTestingResend ? (
@@ -269,7 +257,7 @@ export default function IntegrationTest() {
                   Sending Test Email...
                 </>
               ) : (
-                'Send Test Email'
+                'Send Test Email via Firebase Functions'
               )}
             </Button>
 
@@ -315,41 +303,55 @@ export default function IntegrationTest() {
         <CardHeader>
           <CardTitle>Configuration Instructions</CardTitle>
           <CardDescription>
-            How to set up environment variables for this application
+            How to set up Firebase Functions for secure email sending
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <h4 className="font-medium mb-2">1. Supabase Configuration</h4>
+            <h4 className="font-medium mb-2">1. Firebase Functions Setup</h4>
             <p className="text-sm text-muted-foreground mb-2">
-              Add these variables to your environment:
-            </p>
-            <pre className="bg-muted p-3 rounded text-sm overflow-x-auto">
-{`VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your_anon_key_here`}
-            </pre>
-          </div>
-
-          <div>
-            <h4 className="font-medium mb-2">2. Resend Configuration</h4>
-            <p className="text-sm text-muted-foreground mb-2">
-              Add this variable to your environment:
-            </p>
-            <pre className="bg-muted p-3 rounded text-sm overflow-x-auto">
-{`VITE_RESEND_API_KEY=re_your_resend_api_key_here`}
-            </pre>
-          </div>
-
-          <div>
-            <h4 className="font-medium mb-2">3. For Production (Firebase)</h4>
-            <p className="text-sm text-muted-foreground mb-2">
-              Set these environment variables in Firebase Console:
+              The project now uses Firebase Functions for secure server-side email sending:
             </p>
             <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
-              <li>Go to Firebase Console → Your Project → Functions</li>
-              <li>Click on "Configuration" tab</li>
-              <li>Add environment variables under "Environment variables"</li>
-              <li>Redeploy your functions after adding variables</li>
+              <li>✅ Functions code created in <code>functions/index.js</code></li>
+              <li>✅ Environment variables configured via <code>firebase functions:config:set</code></li>
+              <li>⚠️ Requires Blaze (pay-as-you-go) plan for deployment</li>
+              <li>✅ Client-side integration ready in <code>src/lib/firebaseFunctions.ts</code></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-medium mb-2">2. Upgrade to Blaze Plan</h4>
+            <p className="text-sm text-muted-foreground mb-2">
+              To deploy the functions, upgrade your Firebase project:
+            </p>
+            <a 
+              href="https://console.firebase.google.com/project/debt-reminder-2354-9102f/usage/details"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 underline"
+            >
+              Upgrade to Blaze Plan →
+            </a>
+          </div>
+
+          <div>
+            <h4 className="font-medium mb-2">3. Deploy Functions</h4>
+            <p className="text-sm text-muted-foreground mb-2">
+              After upgrading, deploy the functions:
+            </p>
+            <pre className="bg-muted p-3 rounded text-sm overflow-x-auto">
+{`firebase deploy --only functions`}
+            </pre>
+          </div>
+
+          <div>
+            <h4 className="font-medium mb-2">4. Security Benefits</h4>
+            <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+              <li>🔒 API keys are never exposed to the client</li>
+              <li>🔒 All sensitive operations happen server-side</li>
+              <li>🔒 Automatic logging to Supabase database</li>
+              <li>🔒 Built-in validation and sanitization</li>
             </ul>
           </div>
         </CardContent>
