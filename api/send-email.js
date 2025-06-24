@@ -30,15 +30,25 @@ function getEnvVar(key, fallback) {
   return process.env[key.toUpperCase().replace('.', '_')] || fallback;
 }
 
-// Set your trusted origins here
+// Set your trusted origins here - update with your actual domains
 const TRUSTED_ORIGINS = [
-  'https://your-production-domain.com',
+  'https://debt-reminder-nexus.web.app',
+  'https://debt-reminder-nexus.firebaseapp.com',
   'http://localhost:3000',
+  'http://localhost:5173',
 ];
 
-// Use config or env for API keys
-const SERVER_API_KEY = getEnvVar('resend.api_key', process.env.RESEND_API_KEY);
-const ENDPOINT_API_KEY = getEnvVar('endpoint.api_key', process.env.ENDPOINT_API_KEY);
+// Use config or env for API keys - support both VITE_ prefixed and non-prefixed versions
+const SERVER_API_KEY = getEnvVar('resend.api_key', 
+  process.env.RESEND_API_KEY || 
+  process.env.VITE_RESEND_API_KEY || 
+  'your_resend_api_key_here'
+);
+
+const ENDPOINT_API_KEY = getEnvVar('endpoint.api_key', 
+  process.env.ENDPOINT_API_KEY || 
+  'your_endpoint_api_key_here'
+);
 
 function isValidEmail(email) {
   // Simple email regex
