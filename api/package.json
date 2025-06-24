@@ -1,0 +1,13 @@
+{
+  "name": "debt-reminder-api",
+  "version": "1.0.0",
+  "description": "API for sending emails via Resend",
+  "main": "send-email.js",
+  "type": "module",
+  "dependencies": {
+    "resend": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
